@@ -1,0 +1,197 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+  <link rel="stylesheet" type="text/css" href="css/baidu.css" />
+  <title>
+    地图
+  </title>
+  <style type="text/css">
+    <!-- body {
+      margin-left: 0px;
+      margin-top: 0px;
+      margin-right: 0px;
+      margin-bottom: 0px;
+    }
+
+    -->
+  </style>
+</head>
+
+<body>
+
+  <!--startprint-->
+  <div id="allmap" onselectstart="return false;" style="height: 100%;position:relative;">
+  </div>
+  <!--endprint-->
+
+
+
+
+</body>
+
+</html>
+<script language="javascript">
+  String.prototype.trim = function() {
+    return this.replace(/(^\s*)|(\s*$)/g, '');
+  }
+</script>
+<script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
+<!--
+<script type="text/javascript" src="js/BaiduApi_2.0.js"></script>
+-->
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=05c0e8c0bc349a5fe23fafb604a27d5c"></script>
+
+<script type="text/javascript" src="js/DrawingManager_min.js"></script>
+<!--
+<script type="text/javascript" src="js/AreaRestriction_min.js"></script>
+<script type="text/javascript" src="js/TextIconOverlay_min.js"></script>
+<script type="text/javascript" src="js/MarkerClusterer_min.js"></script>
+<script type="text/javascript" src="js/scxnLabel.js"></script>
+<script type="text/javascript" src="js/DistanceTool_min.js"></script>
+<script type="text/javascript" src="js/data_Map.js"></script>
+<script type="text/javascript" src="js/RectangleZoom_min.js"></script>
+<script type="text/javascript" src="js/ScxnTools.js"></script>
+<script type="text/javascript" src="js/scxnTabDiv.js"></script>
+-->
+
+<script type="text/javascript">
+  (function() {
+    var urlPath = window.location.href.replace('Map.html', '');
+    var minZoom = 6;
+    var maxZoom = 21;
+    var MapType = function() {
+      // 增加离线瓦片图层
+      var tileLayer = new BMap.TileLayer();
+      tileLayer.getTilesUrl = function(tileCoord, zoom) {
+        var x = tileCoord.x;
+        var y = tileCoord.y;
+        var url = urlPath + 'overlay/' + (zoom) + "/" + x + "/" + y + ".jpg";
+        return url;
+      }
+      var myType = new BMap.MapType('MyMap', tileLayer, {
+        minZoom: minZoom,
+        maxZoom: maxZoom
+      });
+      var weixing = BMAP_HYBRID_MAP;
+      return myType;
+    };
+
+
+    //初始化地图
+    window.map = new BMap.Map('allmap', {
+      //mapType: MapType()
+    });
+
+    //增加离线瓦片图层
+    /*var overlayTileLayer = new BMap.TileLayer({isTransparentPng: true});
+    overlayTileLayer.getTilesUrl = function(tileCoord, zoom) {
+    	var x = tileCoord.x;
+    	var y = tileCoord.y;
+    	var url = urlPath+'overlay/' + (zoom) + "/" + x + "/" + y + ".jpg"; //直接使用本地瓦片
+    	return url;
+    }
+    map.addTileLayer(overlayTileLayer);*/
+
+
+
+    //添加缩放控件
+    var navControl = new BMap.NavigationControl({
+      anchor: BMAP_ANCHOR_BOTTOM_RIGHT,
+      type: BMAP_NAVIGATION_CONTROL_LARGE
+    });
+    navControl.defaultOffset = new BMap.Size(10, 10);
+    window.map.addControl(navControl);
+
+
+    window.map.setMinZoom(minZoom);
+    window.map.setMaxZoom(maxZoom);
+    window.map.enableScrollWheelZoom(); //启用滚动缩放
+    window.map.disableDoubleClickZoom(); //禁用双击放大
+    window.map.enableContinuousZoom();
+    window.map.enableKeyboard(); //启用键盘操作
+    //地图样式
+    //map.setMapStyle(getMapStyle());
+    ///************************************************************************************/
+    window.map.centerAndZoom(new BMap.Point(120.441329, 36.17245), 6);
+
+
+    window.map.addEventListener("click", function(e) { //
+
+      //console.log(point);
+      //console.log(Math.round(point.x*Math.pow(2,11-18)/256));
+      //console.log(Math.round(point.y*Math.pow(2,11-18)/256));
+
+
+    });
+
+    var drawingIdx = 0;
+    window.drawingOverlays = [];
+    var drawingObject = null;
+    var selectedDeviceList = []; //for 发送到ListView
+    var overlaycomplete = function(e) {
+
+      drawingObject = e;
+      window.drawingOverlays.push(e);
+      window.drawingManager.close();
+      var projection = new BMap.MercatorProjection();
+      var point1 = projection.lngLatToPoint(e.overlay.getBounds().getSouthWest());
+      var point2 = projection.lngLatToPoint(e.overlay.getBounds().getNorthEast());
+
+
+      var _postMessage = Math.round(point1.x / 256) + "," + Math.round(point1.y / 256) + "," + Math.round(point2.x / 256) + "," + Math.round(point2.y / 256) + "";
+
+      //console.log();
+
+
+      if (window.external)
+        window.external.sendChooseArea(_postMessage);
+    };
+    var styleOptions = {
+      strokeColor: "#ff0000", //边线颜色。
+      fillColor: "#ff0000", //填充颜色。当参数为空时，圆形将没有填充效果。
+      strokeWeight: 3, //边线的宽度，以像素为单位。
+      strokeOpacity: 0.7, //边线透明度，取值范围0 - 1。
+      fillOpacity: 0.2, //填充的透明度，取值范围0 - 1。
+      strokeStyle: 'solid' //边线的样式，实线solid或虚线dashed。
+    }
+    //实例化鼠标绘制工具
+    window.drawingManager = new BMapLib.DrawingManager(window.map, {
+      isOpen: false, //是否开启绘制模式
+      enableDrawingTool: false, //是否显示工具栏
+      /*drawingToolOptions: {
+      	anchor: BMAP_ANCHOR_TOP_RIGHT, //位置
+      	offset: new BMap.Size(5, 5), //偏离值
+      	scale: 0.8, //工具栏缩放比例
+      drawingModes : [
+      	//BMAP_DRAWING_MARKER,
+      	BMAP_DRAWING_CIRCLE,
+      	//BMAP_DRAWING_POLYLINE,
+      	BMAP_DRAWING_POLYGON,
+      	BMAP_DRAWING_RECTANGLE
+       ]
+      },*/
+      circleOptions: styleOptions, //圆的样式
+      polylineOptions: styleOptions, //线的样式
+      polygonOptions: styleOptions, //多边形的样式
+      rectangleOptions: styleOptions //矩形的样式
+    });
+
+    //添加鼠标绘制工具监听事件，用于获取绘制结果
+    window.drawingManager.addEventListener('overlaycomplete', overlaycomplete);
+
+    window.drawingManager.setDrawingMode(BMAP_DRAWING_RECTANGLE);
+    //window.external.MyMessageBox('javascript访问C#代码');
+    window.drawingManager.open();
+  }());
+
+  function drawSomthing() {
+    window.drawingManager.close();
+    for (var i = 0; i < window.drawingOverlays.length; i++) //全部清除，每次只画一个图形
+    {
+      window.map.removeOverlay(window.drawingOverlays[i].overlay);
+    }
+    window.drawingManager.open();
+  }
+  //drawingManager.open();
+</script>
